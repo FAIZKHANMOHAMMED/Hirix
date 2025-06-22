@@ -2,64 +2,54 @@ import { Application } from "../models/application.model.js";
 import { Job } from "../models/job.model.js";
 import jwt from "jsonwebtoken";
 
-
 export const applyJob = async (req, res) => {
-    try {
-      const token = req.headers.authorization?.split(" ")[1]; // Expecting "Bearer <token>"
-  
-      if (!token) {
-        return res.status(401).json({ message: "No token provided", success: false });
-      }
-  
-      const decoded = jwt.verify(token, process.env.SECRET_KEY);
-      const userId = decoded.userId;
-  
-      const jobId = req.params.id;
-      if (!jobId) {
-        return res.status(400).json({
-          message: "Job id is required.",
-          success: false,
-        });
-      }
-  
-      // Check if already applied
-      const existingApplication = await Application.findOne({ job: jobId, applicant: userId });
-  
-      if (existingApplication) {
-        return res.status(400).json({
-          message: "You have already applied for this job",
-          success: false,
-        });
-      }
-  
-      const job = await Job.findById(jobId);
-      if (!job) {
-        return res.status(404).json({
-          message: "Job not found",
-          success: false,
-        });
-      }
-  
-      const newApplication = await Application.create({
-        job: jobId,
-        applicant: userId,
-      });
-  
-      job.applications.push(newApplication._id);
-      await job.save();
-  
-      return res.status(201).json({
-        message: "Job applied successfully.",
-        success: true,
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        message: "Internal server error",
-        success: false,
-      });
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token || token === "null") {
+      return res.status(401).json({ message: "Unauthorized: Token missing", success: false });
     }
-  };
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.SECRET_KEY);
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid or expired token", success: false });
+    }
+
+    const userId = decoded.userId;
+    const jobId = req.params.id;
+
+    if (!jobId) {
+      return res.status(400).json({ message: "Job ID is required", success: false });
+    }
+
+    const existingApplication = await Application.findOne({ job: jobId, applicant: userId });
+
+    if (existingApplication) {
+      return res.status(400).json({ message: "You already applied", success: false });
+    }
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found", success: false });
+    }
+
+    const newApplication = await Application.create({ job: jobId, applicant: userId });
+    job.applications.push(newApplication._id);
+    await job.save();
+
+    return res.status(201).json({ message: "Applied successfully", success: true });
+  } catch (error) {
+    console.error("Apply job error:", error);
+    return res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+
+
+
   
 export const getAppliedJobs = async (req,res) => {
     try {

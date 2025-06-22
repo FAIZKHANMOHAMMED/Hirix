@@ -26,29 +26,38 @@ const JobDescription = () => {
   const navigate = useNavigate()
 
   const applyJobHandler = async () => {
+    const token = localStorage.getItem("token");
+  
+    if (!token || token === "null") {
+      toast.error("Please login to apply for this job.");
+      return;
+    }
+  
     try {
-      setIsLoading(true)
-      const token = localStorage.getItem("token"); // or from Redux/AuthContext
-
-const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, {
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-});
-
+      setIsLoading(true);
+      const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+  
       if (res.data.success) {
-        setIsApplied(true)
-        const updatedSingleJob = { ...singleJob, applications: [...singleJob.applications, { applicant: user?._id }] }
-        dispatch(setSingleJob(updatedSingleJob))
-        toast.success(res.data.message)
+        setIsApplied(true);
+        const updatedSingleJob = {
+          ...singleJob,
+          applications: [...singleJob.applications, { applicant: user?._id }]
+        };
+        dispatch(setSingleJob(updatedSingleJob));
+        toast.success(res.data.message);
       }
     } catch (error) {
-      console.log(error)
-      toast.error(error.response.data.message)
+      console.log(error);
+      toast.error(error?.response?.data?.message || "Application failed");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+  
 
   useEffect(() => {
     const fetchSingleJob = async () => {
