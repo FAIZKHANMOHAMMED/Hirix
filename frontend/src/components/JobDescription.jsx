@@ -26,7 +26,7 @@ const JobDescription = () => {
   const navigate = useNavigate()
 
   const applyJobHandler = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token"); // Must be set at login time
   
     if (!token || token === "null") {
       toast.error("Please login to apply for this job.");
@@ -37,7 +37,7 @@ const JobDescription = () => {
       setIsLoading(true);
       const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}` // ✅ THIS IS REQUIRED
         }
       });
   
@@ -51,12 +51,13 @@ const JobDescription = () => {
         toast.success(res.data.message);
       }
     } catch (error) {
-      console.log(error);
-      toast.error(error?.response?.data?.message || "Something went wrong");
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Unauthorized or session expired");
     } finally {
       setIsLoading(false);
     }
   };
+  
   
   
 

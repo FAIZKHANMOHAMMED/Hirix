@@ -1,5 +1,6 @@
 import { Application } from "../models/application.model.js";
 import { Job } from "../models/job.model.js";
+
 import jwt from "jsonwebtoken";
 
 export const applyJob = async (req, res) => {
@@ -8,7 +9,7 @@ export const applyJob = async (req, res) => {
     const token = authHeader && authHeader.split(" ")[1];
 
     if (!token || token === "null") {
-      return res.status(401).json({ message: "Unauthorized: Token missing", success: false });
+      return res.status(401).json({ message: "Unauthorized: No token provided", success: false });
     }
 
     let decoded;
@@ -21,14 +22,9 @@ export const applyJob = async (req, res) => {
     const userId = decoded.userId;
     const jobId = req.params.id;
 
-    if (!jobId) {
-      return res.status(400).json({ message: "Job ID is required", success: false });
-    }
-
     const existingApplication = await Application.findOne({ job: jobId, applicant: userId });
-
     if (existingApplication) {
-      return res.status(400).json({ message: "You already applied", success: false });
+      return res.status(400).json({ message: "Already applied", success: false });
     }
 
     const job = await Job.findById(jobId);
@@ -41,9 +37,9 @@ export const applyJob = async (req, res) => {
     await job.save();
 
     return res.status(201).json({ message: "Applied successfully", success: true });
-  } catch (error) {
-    console.error("Apply job error:", error);
-    return res.status(500).json({ message: "Internal Server Error", success: false });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error", success: false });
   }
 };
 
