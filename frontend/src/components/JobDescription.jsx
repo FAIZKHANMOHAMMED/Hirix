@@ -28,7 +28,13 @@ const JobDescription = () => {
   const applyJobHandler = async () => {
     try {
       setIsLoading(true)
-      const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, { withCredentials: true })
+      const token = localStorage.getItem("token"); // or from Redux/AuthContext
+
+const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
 
       if (res.data.success) {
         setIsApplied(true)
