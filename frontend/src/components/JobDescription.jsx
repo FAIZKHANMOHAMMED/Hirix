@@ -25,39 +25,49 @@ const JobDescription = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  const applyJobHandler = async () => {
-    const token = localStorage.getItem("token"); // Must be set at login time
+const applyJobHandler = async () => {
+  const token = localStorage.getItem("token");
   
-    if (!token || token === "null") {
-      toast.error("Please login to apply for this job.");
-      return;
+  if (!token || token === "null" || token === "undefined") {
+    toast.error("Please login to apply for this job.");
+    // Redirect to login page
+    navigate('/login', { state: { from: window.location.pathname } });
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      withCredentials: true // Important for cross-origin requests
+    });
+
+    if (res.data.success) {
+      setIsApplied(true);
+      const updatedSingleJob = {
+        ...singleJob,
+        applications: [...(singleJob.applications || []), { applicant: user?._id }]
+      };
+      dispatch(setSingleJob(updatedSingleJob));
+      toast.success(res.data.message);
     }
-  
-    try {
-      setIsLoading(true);
-      const res = await axios.get(`${APPLICATION_API_END_POINT}/apply/${jobId}`, {
-        headers: {
-          Authorization: `Bearer ${token}` // ✅ THIS IS REQUIRED
-        }
-      });
-  
-      if (res.data.success) {
-        setIsApplied(true);
-        const updatedSingleJob = {
-          ...singleJob,
-          applications: [...singleJob.applications, { applicant: user?._id }]
-        };
-        dispatch(setSingleJob(updatedSingleJob));
-        toast.success(res.data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Unauthorized or session expired");
-    } finally {
-      setIsLoading(false);
+  } catch (error) {
+    console.error("Application error:", error);
+    if (error.response?.status === 401) {
+      // Clear invalid token and redirect to login
+      localStorage.removeItem("token");
+      toast.error("Your session has expired. Please login again.");
+      navigate('/login', { state: { from: window.location.pathname } });
+    } else {
+      toast.error(error.response?.data?.message || "Failed to apply. Please try again.");
     }
-  };
-  
+  } finally {
+    setIsLoading(false);
+  }
+};
   
   
 
